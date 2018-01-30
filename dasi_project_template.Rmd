@@ -1,0 +1,92 @@
+---
+title: "Does Higher Education Make People Richer?"
+date: "03/10/2015"
+output:
+  html_document:
+    theme: cerulean
+---
+
+<!-- For more info on RMarkdown see http://rmarkdown.rstudio.com/ -->
+
+<!-- Enter the code required to load your data in the space below. The data will be loaded but the line of code won't show up in your write up (echo=FALSE) in order to save space-->
+```{r echo=FALSE}
+load(url("http://bit.ly/dasi_gss_data"))
+```
+
+<!-- In the remainder of the document, add R code chunks as needed -->
+
+### Introduction:
+I aim to test whether there is a positive relationship between education level and income. Thus, my research question is titled: "Does Higher Education Make People Richer?"
+
+
+### Data:
+The data were collected through a series of surveys from 1972-2012. with a total of 57,061 completed interviews The median length of the interview has been about one and a half hours. 
+Each survey from 1972 to 2004 was an independently drawn sample of English-speaking persons 18 years of age or over, living in non-institutional arrangements within the United States. Starting in 2006 Spanish-speakers were added to the target population.
+
+Citation for the data can be obtained from the following link:
+Persistent URL: http://doi.org/10.3886/ICPSR34802.v1
+The cases observed in the data are all individuals,each of whom was a noninstitutionalized, English or Spanish speaking person 18 years of age or older, living in the United States.
+
+The variables we will be inspecting are 'degree' and 'income06.
+'income06' is the total family income and is the response to the question: "In which of these groups did your total family income, from all sources, fall last year before taxes, that is?"
+There are 26 categories of income groups that respondents can fall into all the way from less than $1000 to above $150,000. Since the data have been grouped into categories by researchers rather than just providing a raw dollar number for income, the variable is ordinal and categorical.
+
+The variable 'degree' is a response to the question:
+"If finished 9th-12th grade: Did you ever get a high school diploma or a GED certificate?"
+
+The data are grouped into 5 categories all the way from high school to the Graduate level. Thus it is also a categorical ordinal variable.
+More information about the variable types can be found at the following link below:
+ https://d396qusza40orc.cloudfront.net/statistics%2Fproject%2Fgss1.html
+ 
+ This is an observational study as the data of income and degree level were collected from individuals in a way that did not directly interfere with how they arose(it was 'observed' and recorded from US residents). 
+ Individuals were drawn randomnly and independantly from the population regardless of their employment and education status.
+ It is important to note that the study is not an experiment where researchers randomnly assign subjects to treatments.
+Furthermore, since this study uses past information to make inferences about the population, it is also called a retrospective study.
+### Exploratory data analysis:
+```{r}
+levels(gss$income06)
+levels(gss$income06)<- c("Low", "Low", "Low", "Low", "Low", "Low", "Low", "Low", "Low", "Low", "Low", "Low", "Medium", "Medium", "Medium", "Medium", "Medium", "Medium", "Medium", "High", "High", "High", "High", "V. High", "V. High", "Refused")
+table(gss$degree, gss$income06)
+degree_income<-  table(gss$degree, gss$income06)
+prop_degree_income<- prop.table(degree_income)
+barplot(prop_degree_income, col=c("dark blue", "Pink", "yellow", "magenta", "light blue"), legend=TRUE, main= "BarPlot of Family Income Versus Level of Education")
+ mosaicplot(prop_degree_income, col=c("dark blue", "pink", "yellow", "magenta", "light blue"),main= "MosaicPlot of Family Income Versus Level of Education ")
+```
+-From the above plot it can clearly be seen that since the length of the segments representing the different income classes("Low" to "V.High") vary by the level of education. This indicates that there is a relationship(dependence) between the two variables "degree" and "income06" i.e. that there is an association between education and level of family income.
+
+- The width of the bars gives us the count(frequency) of the number of people surveyed in each education category. It can be seen that the width of the bar representing the "High School" category is the largest suggesting that most people in the survey are those who have a high school diploma. This is also confirmed by the summary statistic for degree which shows that the amount of people with a high school diploma is 29287; a value much higher than the rest.
+
+- The height of the bars gives us the proportion of people in each education category with a certain level of income.
+It can clearly be seen that the proportion(percentage) of people with a higher level of income tend to increase as the level of Education increases . eg: the proportion of people with the highest level of income ("V. High") are those with the highest level of education in our survey("Graduate" level). We ignore the "Refused" category as we do not know what level of Education they have and thus cannot talk about any correlation.
+
+
+### Inference:
+The population of interest is all noninstitutionalized, English and Spanish speaking persons 18 years of age or older, living in the United States.
+
+The sample size surveyed is reasonably large, being at least 1500 for each year. While the methodology evolved over the years, the surveyed sample can be well approximated to be an independently drawn (random) sample (block quota sampling from 1972-1976; full probability sampling for half of the 1975 and 1976 surveys and the 1977, 1978, 1980, 1982-1991, 1993-1998, 2000, 2002, 2004, 2006, 2008, 2010, and 2012 surveys) - thus it is reasonably representation of the population surveyed. The sample size and randomized selection enable generalizability. However, spanish-speaking people were not included in the sample until 2006. Therefore, the data before 2006 can only be generalized to the English speaking population while the data from 2006 onwards can be more reasonably generalized to the entire population of the United States.
+
+
+Furthermore, the above website also states the method of data collection used: "computer-assisted personal interview (CAPI), face-to-face interview, telephone interview".
+this will give rise to sources of bias such as:
+- interviewer-bias: where the responses of people surveyed may be manipulated by the interviewer and therefore affect the true nature of the response.
+- non-response: A fraction of the randomnly sampled people may not respond as they may not like to reveal answers to some questions posed in the survey therefore preventing generalisability further.
+```{r}
+ summary(table(gss$degree,gss$income06))
+ load(url("http://assets.datacamp.com/course/dasi/inference.Rdata"))
+ inference(gss$income06,gss$degree,est="proportion",type="ht",alternative="greater",method="theoretical")
+```
+From the above mosaic and bar plots it seems that there is a relationship between level of education and income level i.e. the higher the level of education, the higher the level of income earned . 
+However, in order to confirm whether this relationship is true, we will need to conduct a hypothesis test. The test being used is a Chi-Squared test of independence.
+Firstly, we will need to check whether the conditions hold .
+i) For Independence: As stated above it is reasonable to assume that data were collected randomnly from respondents. Since sampling was carried out without replacement, from the above summary statistic it can be seen that the number of cases for this test are 10010, which is indeed less than 10% of the US population. 
+ii) For Sample Size/Skew: It can been seen that each particular cell under the Chi-Squared test has more than 5 expected cases.
+The null hypothesis states that there is no dependence between income levels(response variable) and education levels(explanatory variable), whereas the alternative hypothesis states that there is a dependence.
+The Chi-Squared test statistic value of 1896.1 is very large and has a very small p-value of 2.2e-16. This very large test statictic states that there is highly significant evidence that there is a relationship between education levels and income levels. It is further supported by a very small p-value. Thus, we will reject the null hypothesis in favour of the alternative.
+
+
+### Conclusion:
+
+
+### Appendix:
+https://www.calvin.edu/~scofield/courses/m143/materials/RcmdsFromClass.pdf
+
