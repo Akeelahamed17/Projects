@@ -1,0 +1,130 @@
+---
+title: "Accelerometer Prediction"
+output: html_document
+---
+
+
+```{r}
+setwd("~/Desktop/MA429 Mock Project/")
+library(e1071)
+#Read in Data
+accelerometer_data <- read.table("accelerometer.csv", sep = ";", header = TRUE, dec = ",")
+head(accelerometer_data)
+summary(accelerometer_data)
+dim(accelerometer_data)
+#As can be seen, we have 165633 records/observations and 19 features/predictors.
+
+#Check for any Missing Values
+anyNA(accelerometer_data)
+
+str(accelerometer_data)
+
+# Convert variables 3-18 to class "numeric" 
+accelerometer_data[,3:18] <- sapply(accelerometer_data[,3:18],as.numeric)
+
+
+
+#Create a subset to work on before trying on full dataset
+set.seed(201316007)
+subset1 <- sample(165633, 1000)
+accelerometer_subset <- accelerometer_data[subset1,]
+
+#Rank features by importance 
+#ensure results are repeatable
+set.seed(201316007)
+library(mlbench)
+library(caret)
+# prepare training scheme
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
+# train the model
+model <- train(class~., data=accelerometer_subset, method="lvq", preProcess="scale", trControl=control)
+# estimate variable importance
+importance <- varImp(model, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
+#We see that weight and BMI are amongst the least important features thus we can safely ignore them in our further calculations.
+
+
+#Create a training and testing set with a 0.75:0.25 ratio by random sampling
+set.seed(201316007)
+split <- sample(seq_len(nrow(accelerometer_subset)), size = floor(0.75*nrow(accelerometer_subset)))
+#train_set<- accelerometer_subset[split,]
+
+#####Creating training and testing set from subset, having features "weight" and "BMI" removed
+train_set<- accelerometer_subset[split,-c(5,6)]
+#test_set <- accelerometer_subset[-split,]
+test_set <- accelerometer_subset[-split,-c(5,6)]
+dim(train_set)
+dim(test_set)
+
+############Method 1 : Support Vector Machines ##################
+#Perform SVM on training Data using linear kernel & only on a subset of 1000 observations
+start.time <- Sys.time()
+svm_fit <- svm(class~., data=train_set, kernel = "linear",cost = 10)
+end.time <- Sys.time()
+end.time - start.time
+classpred <- predict(svm_fit, test_set[,-17])
+test_accuracy <- function(table_values){
+  sum(diag(table_values))/sum(table_values)
+}
+test_accuracy(table(predict = classpred, truth = test_set$class))
+
+
+#Perform 10 fold CV on the model, varying the cost, to determine which cost is best for a linear kernel
+set.seed(201316007)
+tune.out = tune(svm, class~., data = train_set,kernel = "linear", ranges = 
+                  list(cost = c(0.0001, 0.01, 0.1,1,5,10,20)))
+summary(tune.out)
+bestmod = tune.out$best.model
+#bestmod says that a cost of 5 gives the lowest error.
+
+classpred <- predict(bestmod, test_set[,-17])
+
+test_accuracy(table(predict = classpred, truth = test_set$`class`))
+
+
+# Trying with a Polynomial kernel, tuning cost and degree
+set.seed(201316007)
+tune.out = tune(svm, class~., data = train_set,kernel = "polynomial", ranges = 
+                  list(cost = c(0.0001, 0.01, 0.1,1,5,10,20),degree = c(1,2,3,4,5)))
+summary(tune.out)
+bestmod = tune.out$best.model
+#bestmod says that a cost of 20 and degree of 1 gives the lowest error.
+
+classpred <- predict(bestmod, test_set[,-17])
+test_accuracy(table(predict = classpred, truth = test_set$`class`))
+
+#Changing kernel to be radial, tuning cost and gamma
+set.seed(201316007)
+tune.out = tune(svm, class~., data = train_set,kernel = "radial", ranges = 
+                  list(cost = c(0.0001, 0.01, 0.1,1,5,10,20), gamma = c(0.5,1,2,3,4)))
+summary(tune.out)
+bestmod = tune.out$best.model
+#bestmod says that a cost of 5 and gamma of 0.5 gives the lowest error.
+
+classpred <- predict(bestmod, test_set[,-17])
+test_accuracy(table(predict = classpred, truth = test_set$`class`))
+
+#Now Use Radial Kernel with cost = 10, gamma = 0.5 for entire dataset:
+set.seed(201316007)
+split <- sample(seq_len(nrow(accelerometer_data)), size = floor(0.75*nrow(accelerometer_data)))
+# Remove 2 least important features: 
+train_set_full<- accelerometer_data[split,-c(5,6)]
+test_set_full <- accelerometer_data[-split,-c(5,6)]
+
+dim(train_set)
+
+set.seed(201316007)
+start.time <- Sys.time()
+#svm_fit = svm(class~., data = train_set_full,kernel = "radial", cost = 10, gamma = 0.5)
+end.time <- Sys.time()
+end.time - start.time
+#summary(svm_fit)
+
+#classpred <- predict(svm_fit, test_set_full[,-18])
+#test_accuracy(table(predict = classpred, truth = test_set_full$class))
+
+
+```
